@@ -1,0 +1,7 @@
+LICENSE
+README.md
+setup.py
+lvdm.egg-info/PKG-INFO
+lvdm.egg-info/SOURCES.txt
+lvdm.egg-info/dependency_links.txt
+lvdm.egg-info/top_level.txt
