@@ -27,7 +27,9 @@ from lvdm.models.modules.slot_attention import SlotAttention
 from lvdm.samplers.ddim import DDIMSampler
 from lvdm.utils.common_utils import exists, default, ismap, isimage, mean_flat, count_params, instantiate_from_config, check_istarget
 from lvdm.utils.saving_utils import log_txt_as_img
+
 from lvdm.models.modules.slot_attention import SlotAttention
+from lvdm.models.losses.consistency import ConsistencyLoss
 
 # def get_parser():
 #     parser = argparse.ArgumentParser()
@@ -545,19 +547,23 @@ class LatentDiffusion(DDPM):
         self.clip_length = clip_length
         self.latent_frame_strde = latent_frame_strde
         
-        ## slot attention implementation
-        # 01 compute slot
-        # 02 
-        self.object_centric = kwargs.get('object_centric')
-#        if self.object_centric:
-#            self.slot_attn = SlotAttention(
-#                                            num_slots = 1,
-#                                            dim = 512,
-#                                            iters = 3   # iterations of attention, defaults to 3
-#                                        )
-            
-            ### dim = input image의 dim, slot = object 개수. 일단은 1개. 
+        self.temperature = 5
         
+        ## slot attention implementation
+        
+        
+        self.object_centric = kwargs.get('object_centric')
+        if self.object_centric:
+            # 01 compute slot
+            self.slot_attn = SlotAttention(
+                                           num_slots = 1,
+                                           dim = 4,
+                                           iters = 3   # iterations of attention, defaults to 3
+                                       )
+            
+            ## dim = channel 개수, slot = object 개수. 일단은 1개. 
+            # 02 consistency loss
+            self.consistency_loss = ConsistencyLoss()
         
     @rank_zero_only
     @torch.no_grad()
@@ -623,6 +629,15 @@ class LatentDiffusion(DDPM):
         z = self.scale_factor * (z + self.shift_factor)
         print('shape of z in first stage:', z.shape)
         ## pseudocode 1 : compute slots
+        self.length = z.shape[2]
+        self.channel = z.shape[1]
+        self.image_size = z.shape[-1]
+        slot_list = []
+        for i in range(self.length):
+            slot = slot_attn(samples_latent[:, :, i, :, :].permute(0,2,3,1).reshape(1, self.image_size**2, self.channel)) # (1, 1024, 4)
+            slot_list.append(slot.flatten()) # 1024
+        self.slot_list = slot_list
+        
         return z
 
     def get_learned_conditioning(self, c):
@@ -702,12 +717,12 @@ class LatentDiffusion(DDPM):
         
         ## z를 가지고 slot attention 계산
         # slot of first frame
-        if self.object_centric:
-            # z is (1, 4, 32, 32)
+#         if self.object_centric:
+#             # z is (1, 4, 32, 32)
             
-            slot0 = self.slot_attn(z.reshape(1, 4, 32*32)) # (z should be batch, size, dim) - I set dim as 512
+#             slot0 = self.slot_attn(z.reshape(1, 4, 32*32)) # (z should be batch, size, dim) - I set dim as 512
             
-            print('shape of slot0 is', slot0.shape)
+#             print('shape of slot0 is', slot0.shape)
         
         c, xc = self.get_condition(batch, x, bs, force_c_encode, k, cond_key)
         out = [z, c]
@@ -917,6 +932,10 @@ class LatentDiffusion(DDPM):
             raise NotImplementedError()
         
         loss_simple = self.get_loss(model_output, target, mean=False).mean([1, 2, 3, 4])
+        
+        ## Stella added consistency loss
+        loss_consistency = self.consistency_loss(self.slot_list, self.length, self.temperature)
+        
         loss_dict.update({f'{prefix}/loss_simple': loss_simple.mean()})
         if self.logvar.device != self.device:
             self.logvar = self.logvar.to(self.device)
