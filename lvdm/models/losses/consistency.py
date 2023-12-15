@@ -4,9 +4,6 @@ import torch.nn.functional as F
 from einops import repeat
 import numpy as np
 
-from taming.modules.discriminator.model import NLayerDiscriminator, weights_init
-from taming.modules.losses.lpips import LPIPS
-from taming.modules.losses.vqperceptual import hinge_d_loss, vanilla_d_loss
 
 class ConsistencyLoss(nn.Module):
     def __init__(self):
