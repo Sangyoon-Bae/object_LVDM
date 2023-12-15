@@ -21,6 +21,7 @@ model:
     shift_factor: 1.4606637
     cond_stage_config: __is_unconditional__
     encoder_type: 3d
+    object_centric: True
 
     unet_config:
       target: lvdm.models.modules.openaimodel3d.UNetModel
@@ -52,7 +53,7 @@ model:
     first_stage_config:
       target: lvdm.models.autoencoder3d.AutoencoderKL
       params:
-        ckpt_path: ${ckpt_path}
+        ckpt_path: "/scratch/connectome/stellasybae/object_LVDM/models/ae/ae_sky.ckpt" #${ckpt_path}
         monitor: "val/rec_loss"
         embed_dim: 4
         lossconfig: __is_first_stage__

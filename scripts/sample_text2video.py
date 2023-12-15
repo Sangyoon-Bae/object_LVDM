@@ -10,6 +10,9 @@ from omegaconf import OmegaConf
 import torch.distributed as dist
 from pytorch_lightning import seed_everything
 
+import sys
+sys.path.append('..')
+
 from lvdm.samplers.ddim import DDIMSampler
 from lvdm.utils.common_utils import str2bool
 from lvdm.utils.dist_utils import setup_dist, gather_data
@@ -83,10 +86,10 @@ def sample_text2video(model, prompt, n_samples, batch_size,
     if args.object_centric:
         slot_attn = SlotAttention(
                                   num_slots = 1,
-                                  dim = 1024,
+                                  dim = 4,
                                   iters = 3   # iterations of attention, defaults to 3
                                   )
-        
+        # input is (batch, embedding ssize, dim)
     
     # sample batches
     all_videos = []
@@ -113,7 +116,8 @@ def sample_text2video(model, prompt, n_samples, batch_size,
             image_size = samples_latent.shape[-1]
             slot_list = []
             for i in range(length):
-                slot = slot_attn(samples_latent[:, :, i, :, :].reshape(1, channel, image_size**2)) # (1, 1, 1024)
+                #slot = slot_attn(samples_latent[:, :, i, :, :].reshape(1, channel, image_size**2)) # (1, 1, 1024)
+                slot = slot_attn(samples_latent[:, :, i, :, :].permute(0,2,3,1).reshape(1, image_size**2, channel)) # (1, 1024, 1)
                 slot_list.append(slot.flatten()) # 1024
                 
             for i in range(length):

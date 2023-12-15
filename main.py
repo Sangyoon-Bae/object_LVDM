@@ -45,6 +45,7 @@ def get_parser(**parser_kwargs):
     parser.add_argument("--increase_log_steps", type=str2bool, nargs="?", const=True, default=True, help="")
     parser.add_argument("--auto_resume", type=str2bool, nargs="?", const=False, default=False, help="")
     parser.add_argument("--load_from_checkpoint", type=str, default="", help="")
+    parser.add_argument('--object_centric', action='store_true')
     return parser
 
 # ---------------------------------------------------------------------------------
@@ -147,6 +148,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
 if __name__ == "__main__":
     parser = get_parser()
     parser = Trainer.add_argparse_args(parser)
+    print(parser)
     opt, unknown = parser.parse_known_args()
 
     # add cwd for convenience and to make classes in this file available when

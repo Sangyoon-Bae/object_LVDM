@@ -2,6 +2,7 @@ import os
 import time
 import random
 import itertools
+import argparse
 from functools import partial
 from contextlib import contextmanager
 
@@ -15,6 +16,10 @@ import pytorch_lightning as pl
 from torchvision.utils import make_grid
 from torch.optim.lr_scheduler import LambdaLR
 from pytorch_lightning.utilities import rank_zero_only
+
+import sys
+sys.path.append('..')
+
 from lvdm.models.modules.distributions import normal_kl, DiagonalGaussianDistribution
 from lvdm.models.modules.ema import LitEma
 from lvdm.models.modules.util import make_beta_schedule, extract_into_tensor, noise_like, random_temporal_masking
@@ -22,6 +27,12 @@ from lvdm.models.modules.slot_attention import SlotAttention
 from lvdm.samplers.ddim import DDIMSampler
 from lvdm.utils.common_utils import exists, default, ismap, isimage, mean_flat, count_params, instantiate_from_config, check_istarget
 from lvdm.utils.saving_utils import log_txt_as_img
+from lvdm.models.modules.slot_attention import SlotAttention
+
+# def get_parser():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--object_centric', action='store_true')
+#     return parser
 
 def disabled_train(self, mode=True):
     """Overwrite model.train with this function to make sure train/eval mode
@@ -85,6 +96,7 @@ class DDPM(pl.LightningModule):
         assert parameterization in ["eps", "x0"], 'currently only supporting "eps" and "x0"'
         self.parameterization = parameterization
         print(f"{self.__class__.__name__}: Running in {self.parameterization}-prediction mode")
+        
         self.cond_stage_model = None
         self.clip_denoised = clip_denoised
         self.log_every_t = log_every_t
@@ -501,6 +513,8 @@ class LatentDiffusion(DDPM):
             conditioning_key = None
         ckpt_path = kwargs.pop("ckpt_path", None)
         ignore_keys = kwargs.pop("ignore_keys", [])
+        self.object_centric = kwargs.get('object_centric')
+        
         super().__init__(conditioning_key=conditioning_key, *args, **kwargs)
         self.concat_mode = concat_mode
         self.cond_stage_trainable = cond_stage_trainable
@@ -599,6 +613,7 @@ class LatentDiffusion(DDPM):
             self.cond_stage_model = model
 
     def get_first_stage_encoding(self, encoder_posterior, noise=None):
+        '''image class!'''
         if isinstance(encoder_posterior, DiagonalGaussianDistribution):
             z = encoder_posterior.sample(noise=noise)
         elif isinstance(encoder_posterior, torch.Tensor):
@@ -606,6 +621,8 @@ class LatentDiffusion(DDPM):
         else:
             raise NotImplementedError(f"encoder_posterior of type '{type(encoder_posterior)}' not yet implemented")
         z = self.scale_factor * (z + self.shift_factor)
+        print('shape of z in first stage:', z.shape)
+        ## pseudocode 1 : compute slots
         return z
 
     def get_learned_conditioning(self, c):
