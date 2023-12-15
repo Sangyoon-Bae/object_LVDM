@@ -22,4 +22,5 @@ moviepy
 av
 timm
 test-tube
+taming-transformers
 -e .

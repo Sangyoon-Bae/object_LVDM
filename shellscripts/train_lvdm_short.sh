@@ -1,6 +1,6 @@
 
 PROJ_ROOT=""                      # root directory for saving experiment logs
-EXPNAME="lvdm_short_sky"          # experiment name 
+EXPNAME="231216_lvdm_short_sky_slot_consistency"          # experiment name 
 DATADIR="../dataset/sky_timelapse"  # dataset directory
 AEPATH="/scratch/connectome/stellasybae/object_LVDM/models/ae/ae_sky.ckpt"    # pretrained video autoencoder checkpoint
 
@@ -16,10 +16,10 @@ python ../main.py \
 --name $EXPNAME \
 #--logdir $PROJ_ROOT \
 #--auto_resume True \
-lightning.trainer.num_nodes=1 \
-data.params.train.params.data_root=$DATADIR \
-data.params.validation.params.data_root=$DATADIR \
-model.params.first_stage_config.params.ckpt_path=$AEPATH \
+#lightning.trainer.num_nodes=1 \
+#data.params.train.params.data_root=$DATADIR \
+#data.params.validation.params.data_root=$DATADIR \
+#model.params.first_stage_config.params.ckpt_path=$AEPATH \
 --load_from_checkpoint '../models/lvdm_short/short_sky.pt' \
 
 # -------------------------------------------------------------------------------------------------

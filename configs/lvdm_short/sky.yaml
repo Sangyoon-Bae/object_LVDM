@@ -88,7 +88,7 @@ data:
     train:
       target: lvdm.data.frame_dataset.VideoFrameDataset
       params:
-        data_root: ${data_root}
+        data_root: '/scratch/connectome/stellasybae/object_lvdm/dataset/sky_timelapse' #${data_root}
         resolution: 256
         video_length: 16
         dataset_name: sky
@@ -98,7 +98,7 @@ data:
     validation:
       target: lvdm.data.frame_dataset.VideoFrameDataset
       params:
-        data_root: ${data_root}
+        data_root: '/scratch/connectome/stellasybae/object_lvdm/dataset/sky_timelapse' #${data_root}
         resolution: 256
         video_length: 16
         dataset_name: sky
@@ -125,7 +125,7 @@ lightning:
     benchmark: True
     batch_size: 3
     num_workers: 0
-    num_nodes: 4
+    num_nodes: 1 #4
     accumulate_grad_batches: 2
     max_epochs: 2000
   modelcheckpoint:
