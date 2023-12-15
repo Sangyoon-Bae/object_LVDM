@@ -236,9 +236,15 @@ class VideoFrameDataset(data.Dataset):
         assert(self.temporal_transform in ["", "rand_clips"])
 
         if subset_split == 'all':
-            video_dir = os.path.join(data_root, "train")
+            if dataset_name == 'sky':
+                video_dir = os.path.join(data_root, "sky_train")
+            else:
+                video_dir = os.path.join(data_root, "train")
         else:
-            video_dir = os.path.join(data_root, subset_split)
+            if dataset_name == 'sky':
+                video_dir = os.path.join(data_root, "sky_"+subset_split)
+            else:
+                video_dir = os.path.join(data_root, subset_split)
         
         if dataset_name == 'UCF-101':
             if annotation_dir is None:
@@ -246,6 +252,7 @@ class VideoFrameDataset(data.Dataset):
             class_to_idx = class_name_to_idx(annotation_dir)
             assert(len(class_to_idx) == 101), f'num of classes = {len(class_to_idx)}, not 101'
         elif dataset_name == 'sky':
+            print('video dir is:', video_dir)
             classes, class_to_idx = find_classes(video_dir)
         else:
             class_to_idx = None

@@ -17,6 +17,10 @@ from pytorch_lightning.plugins import DDPPlugin
 from lvdm.utils.common_utils import instantiate_from_config, str2bool
 from lvdm.utils.log import set_ptl_logger
 
+import warnings
+warnings.filterwarnings('ignore')
+
+
 # if int((pl.__version__).split('.')[1])>=7:
 #     from pytorch_lightning.strategies import DDPStrategy,DDPShardedStrategy
 # else:
@@ -255,20 +259,33 @@ if __name__ == "__main__":
         if opt.load_from_checkpoint:
             config.model.load_from_checkpoint = opt.load_from_checkpoint
         if "load_from_checkpoint" in config.model and config.model.load_from_checkpoint and not resume:
-            try:
-                model = model.load_from_checkpoint(config.model.load_from_checkpoint, **config.model.params)
-            except:
-                # avoid size mismatch
-                # gpu_id = opt.gpus.split(",")[0]
-                # state_dict = torch.load(config.model.load_from_checkpoint, map_location=f"cuda:{gpu_id}")['state_dict']
-                state_dict = torch.load(config.model.load_from_checkpoint, map_location=f"cpu")['state_dict']
-                model_state_dict = model.state_dict()
-                for n, p in model_state_dict.items():
-                    if p.shape != state_dict[n].shape:
-                        print(f"Skip load parameter [{n}] from pretrained! ")
-                        state_dict.pop(n)
-                model_state_dict.update(state_dict)
-                model.load_state_dict(model_state_dict)
+            state_dict = torch.load(config.model.load_from_checkpoint, map_location=f"cpu")
+            model_state_dict = model.state_dict() # slot이 포함됨.
+            print(set(model_state_dict.keys()) - set(state_dict.keys()))
+                  
+#             for n, p in model_state_dict.items():
+#                 if p.shape != state_dict[n].shape:
+#                     print(f"Skip load parameter [{n}] from pretrained! ")
+#                     state_dict.pop(n)
+            model_state_dict.update(state_dict)
+            model.load_state_dict(model_state_dict) 
+                  
+#             try:
+#                 model = model.load_from_checkpoint(config.model.load_from_checkpoint, **config.model.params)
+#             except:
+#                 # avoid size mismatch
+#                 # gpu_id = opt.gpus.split(",")[0]
+#                 # state_dict = torch.load(config.model.load_from_checkpoint, map_location=f"cuda:{gpu_id}")['state_dict']
+#                 state_dict = torch.load(config.model.load_from_checkpoint, map_location=f"cpu")
+#                 #print('key of model dict is', model_dict.keys())
+#                 #state_dict = torch.load(config.model.load_from_checkpoint, map_location=f"cpu")['state_dict']
+#                 model_state_dict = model.state_dict()
+#                 for n, p in model_state_dict.items():
+#                     if p.shape != state_dict[n].shape:
+#                         print(f"Skip load parameter [{n}] from pretrained! ")
+#                         state_dict.pop(n)
+#                 model_state_dict.update(state_dict)
+#                 model.load_state_dict(model_state_dict)
 
         # trainer and callbacks
         trainer_kwargs = dict()

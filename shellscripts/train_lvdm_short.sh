@@ -14,13 +14,14 @@ python ../main.py \
 --base $CONFIG \
 -t --gpus 0, \
 --name $EXPNAME \
+--load_from_checkpoint '/scratch/connectome/stellasybae/object_LVDM/models/lvdm_short/short_sky.ckpt'
 #--logdir $PROJ_ROOT \
 #--auto_resume True \
 #lightning.trainer.num_nodes=1 \
 #data.params.train.params.data_root=$DATADIR \
 #data.params.validation.params.data_root=$DATADIR \
 #model.params.first_stage_config.params.ckpt_path=$AEPATH \
---load_from_checkpoint '../models/lvdm_short/short_sky.pt' \
+
 
 # -------------------------------------------------------------------------------------------------
 # commands for multi nodes training
