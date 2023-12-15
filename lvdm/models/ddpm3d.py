@@ -932,11 +932,15 @@ class LatentDiffusion(DDPM):
             raise NotImplementedError()
         
         loss_simple = self.get_loss(model_output, target, mean=False).mean([1, 2, 3, 4])
+        loss_dict.update({f'{prefix}/loss_simple': loss_simple.mean()})
+
         
         ## Stella added consistency loss
         loss_consistency = self.consistency_loss(self.slot_list, self.length, self.temperature)
+        loss_dict.update({f'{prefix}/loss_conssitency': loss_consistency.mean()})
+
         
-        loss_dict.update({f'{prefix}/loss_simple': loss_simple.mean()})
+        
         if self.logvar.device != self.device:
             self.logvar = self.logvar.to(self.device)
         logvar_t = self.logvar[t]
@@ -951,6 +955,7 @@ class LatentDiffusion(DDPM):
         loss_vlb = (self.lvlb_weights[t] * loss_vlb).mean()
         loss_dict.update({f'{prefix}/loss_vlb': loss_vlb})
         loss += (self.original_elbo_weight * loss_vlb)
+        loss += loss_consistency # Stella added
         loss_dict.update({f'{prefix}/loss': loss})
 
         return loss, loss_dict
