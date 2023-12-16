@@ -164,7 +164,7 @@ if __name__ == "__main__":
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     if opt.auto_resume:
         # no time
-        nowname = opt.name + opt.postfix
+        nowname = str(opt.name) + opt.postfix
     else:
         nowname = now + "_" + opt.name + opt.postfix
     logdir = os.path.join(opt.logdir, nowname)

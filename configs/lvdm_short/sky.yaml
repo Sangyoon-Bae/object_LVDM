@@ -13,7 +13,7 @@ model:
     image_size: 32
     video_length: 4
     channels: 4
-    monitor: val/loss_simple_ema
+    monitor: val/loss #_simple_ema
     cond_stage_trainable: False
     concat_mode: False
     scale_by_std: False

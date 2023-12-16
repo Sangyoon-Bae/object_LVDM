@@ -628,16 +628,17 @@ class LatentDiffusion(DDPM):
             raise NotImplementedError(f"encoder_posterior of type '{type(encoder_posterior)}' not yet implemented")
         z = self.scale_factor * (z + self.shift_factor) # (3, 4, 4, 32, 32) : (B, C, l, h, w)
         ## pseudocode 1 : compute slots
-        self.length = z.shape[2]
-        self.channel = z.shape[1]
-        self.image_size = z.shape[-1]
-        self.batch_size = z.shape[0]
-        slot_list = []
-        for i in range(self.length):
-            slot = self.slot_attn(z[:, :, i, :, :].permute(0,2,3,1).reshape(self.batch_size, self.image_size**2, self.channel)) # (1, 1024, 4)
-            # slot size is (3, 1, 4) : (B, 1, C)
-            slot_list.append(slot.flatten()) # 1024
-        self.slot_list = slot_list
+        self.z = z
+#         self.length = z.shape[2]
+#         self.channel = z.shape[1]
+#         self.image_size = z.shape[-1]
+#         self.batch_size = z.shape[0]
+#         slot_list = []
+#         for i in range(self.length):
+#             slot = self.slot_attn(z[:, :, i, :, :].permute(0,2,3,1).reshape(self.batch_size, self.image_size**2, self.channel)) # (1, 1024, 4)
+#             # slot size is (3, 1, 4) : (B, 1, C)
+#             slot_list.append(slot.flatten()) # 1024
+#         self.slot_list = slot_list
         
         return z
 
@@ -937,6 +938,16 @@ class LatentDiffusion(DDPM):
 
         
         ## Stella added consistency loss
+        self.length = self.z.shape[2]
+        self.channel = self.z.shape[1]
+        self.image_size = self.z.shape[-1]
+        self.batch_size = self.z.shape[0]
+        slot_list = []
+        for i in range(self.length):
+            slot = self.slot_attn(self.z[:, :, i, :, :].permute(0,2,3,1).reshape(self.batch_size, self.image_size**2, self.channel)) # (1, 1024, 4)
+            # slot size is (3, 1, 4) : (B, 1, C)
+            slot_list.append(slot.flatten()) # 1024
+        self.slot_list = slot_list
         loss_consistency = self.consistency_loss(self.slot_list, self.length, self.temperature)[0][0]
         loss_dict.update({f'{prefix}/loss_consistency': loss_consistency})
 
