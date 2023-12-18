@@ -8,12 +8,17 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 from omegaconf import OmegaConf
+import cv2
+
 
 import torch
 from torch.utils.data import DataLoader
 
 from lvdm.utils.common_utils import instantiate_from_config, shift_dim
 from scripts.fvd_utils.fvd_utils import get_fvd_logits, frechet_distance, load_fvd_model, polynomial_mmd
+
+import warnings
+warnings.filterwarnings('ignore')
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -39,6 +44,54 @@ def run(args, run_id, fake_path, i3d, loader, device):
         fake_data = np.load(fake_path)['arr_0']
     elif fake_path.endswith('npy'):
         fake_data = np.load(fake_path)
+        print('shape of fake data is:', fake_data.shape)
+    elif fake_path.endswith('mp4'):
+        # 비디오 파일 열기
+        cap = cv2.VideoCapture(os.path.join(fake_path, i))
+
+        # 프레임을 저장할 리스트
+        frames = []
+
+        # 비디오가 열려 있는 동안 계속해서 프레임 읽기
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            # 프레임을 리스트에 추가
+            frames.append(frame)
+
+        # 비디오 캡처 객체 닫기
+        cap.release()
+
+        # 리스트를 NumPy 배열로 변환
+        fake_data = np.array(frames)
+        '''
+        data_list = os.listdir(fake_path)
+        fake_data = []
+        for i in data_list:
+            cap = cv2.VideoCapture(os.path.join(fake_path, i))
+
+            # 프레임을 저장할 리스트
+            frames = []
+
+            # 비디오가 열려 있는 동안 계속해서 프레임 읽기
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                # 프레임을 리스트에 추가
+                frames.append(frame)
+
+            # 비디오 캡처 객체 닫기
+            cap.release()
+
+            # 리스트를 NumPy 배열로 변환
+            fake_data.append(np.array(frames))
+        fake_data = np.stack(fake_data)
+        '''
+        print('shape of fake data is:', fake_data.shape)
     else:
         print(fake_path)
         raise NotImplementedError
@@ -50,13 +103,26 @@ def run(args, run_id, fake_path, i3d, loader, device):
         videos = shift_dim((batch[args.image_key]+1)*255/2, 1, -1).int().data.numpy() # convert to 0-255
         real_embeddings.append(get_fvd_logits(videos, i3d=i3d, device=device, batch_size=args.batch_size))
     real_embeddings = torch.cat(real_embeddings, 0)[:args.n_sample]
+    print('real embedding first element size', real_embeddings[0].shape)
+    print('size of real embeddings', real_embeddings.shape) # (2048, 400)
     t = time.time() - s
     s = time.time()
     fake_embeddings = []
     n_batch = fake_data.shape[0]//args.batch_size
+    
     for i in tqdm(range(n_batch), desc="Extract Fake Embedding"):
         fake_embeddings.append(get_fvd_logits(fake_data[i*args.batch_size:(i+1)*args.batch_size], i3d=i3d, device=device, batch_size=args.batch_size))
+    '''
+    for batch in tqdm(range(n_batch), desc="Extract Fake Embedding", total=math.ceil(args.n_sample / args.batch_size)):
+        if len(fake_embeddings)*args.batch_size >=args.n_sample: break
+        videos = shift_dim((batch[args.image_key]+1)*255/2, 1, -1).int().data.numpy() # convert to 0-255
+        fake_embeddings.append(get_fvd_logits(videos, i3d=i3d, device=device, batch_size=args.batch_size))
+    '''
+    #fake_embeddings = torch.cat(fake_embeddings, 0)[:args.n_sample]
+    #print('fake embeddings first element size', fake_embeddings[0].shape)
+    #print('fake embeddings', fake_embeddings)
     fake_embeddings = torch.cat(fake_embeddings, 0)[:args.n_sample]
+    print('size of fake embeddings', fake_embeddings.shape)
     t = time.time() - s
     
     print('calculate fvd ...')

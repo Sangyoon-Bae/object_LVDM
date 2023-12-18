@@ -50,6 +50,7 @@ def get_parser():
     parser.add_argument("--save_npz", action='store_true', default=False, help="whether save samples in npz file",)
     parser.add_argument("--save_jpg", action='store_true', default=False, help="whether save samples in jpg file",)
     parser.add_argument("--save_fps", type=int, default=8, help="fps of saved mp4 videos",)
+    parser.add_argument('--object_centric', type=str2bool, default=True)
     return parser
 
 # ------------------------------------------------------------------------------------------
@@ -110,7 +111,11 @@ def main():
     # save
     if (opt.ddp and dist.get_rank() == 0) or (not opt.ddp):
         if opt.seed is not None:
-            save_name = f"seed{seed:05d}"
+            print('opt is:', opt)
+            if opt.object_centric:
+                save_name = f"./OLVDM/OLVDM_seed{seed:05d}"
+            else:
+                save_name = f"./LVDM/LVDM_seed{seed:05d}"
         save_results(samples, opt.save_dir, save_name=save_name, save_fps=opt.save_fps)
     print("Finish sampling!")
     print(f"Run time = {(time.time() - start):.2f} seconds")

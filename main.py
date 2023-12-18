@@ -49,7 +49,9 @@ def get_parser(**parser_kwargs):
     parser.add_argument("--increase_log_steps", type=str2bool, nargs="?", const=True, default=True, help="")
     parser.add_argument("--auto_resume", type=str2bool, nargs="?", const=False, default=False, help="")
     parser.add_argument("--load_from_checkpoint", type=str, default="", help="")
-    parser.add_argument('--object_centric', action='store_true')
+    parser.add_argument('--object_centric', type=str2bool, default=True)
+    parser.add_argument('--temperature', type=int, default=1, help="temperature for consistency loss")
+    
     return parser
 
 # ---------------------------------------------------------------------------------
@@ -486,6 +488,9 @@ if __name__ == "__main__":
             model.learning_rate = base_lr
             print("++++ NOT USING LR SCALING ++++")
             print(f"Setting learning rate to {model.learning_rate:.2e}")
+            print('lightning_config', lightning_config)
+            print('num_nodes is:', lightning_config.trainer.num_nodes)
+            print('global rank is:', trainer.global_rank)
 
         # allow checkpointing via USR1
         def melk(*args, **kwargs):

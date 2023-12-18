@@ -11,6 +11,7 @@ class ConsistencyLoss(nn.Module):
         self.sim = nn.CosineSimilarity(dim=0, eps=1e-6)
 
     def forward(self, slot_list, length, temperature):
+        device = slot_list[1].get_device()
         consistency_loss_whole = []
         for i in range(length):
             for j in range(length):
@@ -22,7 +23,7 @@ class ConsistencyLoss(nn.Module):
                     penalty = torch.abs(torch.tensor([i])-torch.tensor([j])).to(device)
                     consistency_loss_whole.append(-torch.log((numerator/denominator))*penalty)
         
-        total_consistency_loss = sum(consistency_loss_whole)/((i*j)/2)
+        total_consistency_loss = sum(consistency_loss_whole)/(50*(i*j)/2)
         log = {"total_consistency_loss": total_consistency_loss}
         
         return total_consistency_loss, log

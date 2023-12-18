@@ -2,8 +2,6 @@ decord==0.6.0
 einops==0.3.0
 eval==0.0.5
 imageio==2.9.0
-numpy==1.19.2
-omegaconf==2.3.0
 opencv_python_headless==4.6.0.66
 packaging==21.3
 Pillow==9.5.0
@@ -23,4 +21,11 @@ av
 timm
 test-tube
 taming-transformers
+Click
+psutil
+dnspython
+cython
+matplotlib
+numpy==1.19.2
+omegaconf==2.3.0
 -e .

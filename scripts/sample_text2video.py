@@ -53,7 +53,7 @@ def get_parser():
     parser.add_argument("--save_npz", action='store_true', default=False, help="whether save samples in npz file",)
     parser.add_argument("--save_jpg", action='store_true', default=False, help="whether save samples in jpg file",)
     parser.add_argument("--save_fps", type=int, default=8, help="fps of saved mp4 videos",)
-    parser.add_argument('--object_centric', action='store_true')
+    parser.add_argument('--object_centric', type=str2bool, default=True)
     return parser
 
 # ------------------------------------------------------------------------------------------
@@ -218,7 +218,10 @@ def main():
             prompt_str = prompt.replace("/", "_slash_") if "/" in prompt else prompt
             save_name = prompt_str.replace(" ", "_") if " " in prompt else prompt_str
             if opt.seed is not None:
-                save_name = save_name + f"_seed{seed:05d}"
+                if opt.object_centric:
+                    save_name = save_name + f"OLVDM_seed{seed:05d}"
+                else:
+                    save_name = save_name + f"LVDM_seed{seed:05d}"
             save_results(samples, opt.save_dir, save_name=save_name, save_fps=opt.save_fps)
     print("Finish sampling!")
     print(f"Run time = {(time.time() - start):.2f} seconds")

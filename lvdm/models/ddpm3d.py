@@ -105,6 +105,9 @@ class DDPM(pl.LightningModule):
         self.first_stage_key = first_stage_key
         self.image_size = image_size  # try conv?
         
+        
+        self.resume_new_epoch = 0
+        
         if isinstance(self.image_size, int):
             self.image_size = [self.image_size, self.image_size]
         self.channels = channels
@@ -517,6 +520,7 @@ class LatentDiffusion(DDPM):
         ignore_keys = kwargs.pop("ignore_keys", [])
         self.object_centric = kwargs.get('object_centric')
         
+        
         super().__init__(conditioning_key=conditioning_key, *args, **kwargs)
         self.concat_mode = concat_mode
         self.cond_stage_trainable = cond_stage_trainable
@@ -547,7 +551,11 @@ class LatentDiffusion(DDPM):
         self.clip_length = clip_length
         self.latent_frame_strde = latent_frame_strde
         
-        self.temperature = 5
+        self.temperature = kwargs.get('temperature')
+        print('kwargs are ', kwargs)
+        print('how hot?', self.temperature)
+        self.total_length = 16
+        self.image_size = (32, 32)
         
         ## slot attention implementation
         
@@ -629,6 +637,7 @@ class LatentDiffusion(DDPM):
         z = self.scale_factor * (z + self.shift_factor) # (3, 4, 4, 32, 32) : (B, C, l, h, w)
         ## pseudocode 1 : compute slots
         self.z = z
+        self.video_length = z.shape[2] #video_length if video_length is not None else unet_config.params.temporal_length
 #         self.length = z.shape[2]
 #         self.channel = z.shape[1]
 #         self.image_size = z.shape[-1]
@@ -876,6 +885,18 @@ class LatentDiffusion(DDPM):
             assert c is not None
             if self.cond_stage_trainable:
                 c = self.get_learned_conditioning(c)
+        ## here ##
+        if self.object_centric:
+            ## Stella added consistency loss
+            self.length = self.z.shape[2]
+            self.channel = self.z.shape[1]
+            self.batch_size = self.z.shape[0]
+            slot_list = []
+            for i in range(self.length):
+                slot = self.slot_attn(self.z[:, :, i, :, :].permute(0,2,3,1).reshape(self.batch_size, self.image_size[0]**2, self.channel)) # (1, 1024, 4)
+                # slot size is (3, 1, 4) : (B, 1, C)
+                slot_list.append(slot.flatten()) # 1024
+            self.slot_list = slot_list
         return self.p_losses(x, c, t, *args, **kwargs)
 
     def apply_model(self, x_noisy, t, cond, **kwargs):
@@ -937,17 +958,16 @@ class LatentDiffusion(DDPM):
         loss_dict.update({f'{prefix}/loss_simple': loss_simple.mean()})
 
         
-        ## Stella added consistency loss
-        self.length = self.z.shape[2]
-        self.channel = self.z.shape[1]
-        self.image_size = self.z.shape[-1]
-        self.batch_size = self.z.shape[0]
-        slot_list = []
-        for i in range(self.length):
-            slot = self.slot_attn(self.z[:, :, i, :, :].permute(0,2,3,1).reshape(self.batch_size, self.image_size**2, self.channel)) # (1, 1024, 4)
-            # slot size is (3, 1, 4) : (B, 1, C)
-            slot_list.append(slot.flatten()) # 1024
-        self.slot_list = slot_list
+        # ## Stella added consistency loss
+        # self.length = self.z.shape[2]
+        # self.channel = self.z.shape[1]
+        # self.batch_size = self.z.shape[0]
+        # slot_list = []
+        # for i in range(self.length):
+        #     slot = self.slot_attn(self.z[:, :, i, :, :].permute(0,2,3,1).reshape(self.batch_size, self.image_size[0]**2, self.channel)) # (1, 1024, 4)
+        #     # slot size is (3, 1, 4) : (B, 1, C)
+        #     slot_list.append(slot.flatten()) # 1024
+        # self.slot_list = slot_list
         loss_consistency = self.consistency_loss(self.slot_list, self.length, self.temperature)[0][0]
         loss_dict.update({f'{prefix}/loss_consistency': loss_consistency})
 

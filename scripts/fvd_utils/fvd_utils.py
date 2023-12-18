@@ -44,9 +44,16 @@ def get_fvd_logits(videos, i3d, device, batch_size=None):
 
 def load_fvd_model(device):
     i3d = InceptionI3d(400, in_channels=3).to(device)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    i3d_path = os.path.join(current_dir, 'i3d_pretrained_400.pt')
-    i3d.load_state_dict(torch.load(i3d_path, map_location=device))
+    #current_dir = os.path.dirname(os.path.abspath(__file__))
+    #i3d_path = os.path.join(current_dir, 'i3d_pretrained_400.pt')
+    # i3d_path = '/global/cfs/projectdirs/m4244/stella/object_LVDM/shellscripts/logs/231218_lvdm_short_sky_slot_consistency_scaled_temperature_1/checkpoints/epoch=0044-step=004004.ckpt'
+    #i3d_param = []
+    #for name, param in i3d.named_parameters():
+    #    i3d_param.append(name)
+    #print('i3d param',  i3d_param)
+    #print('my model param', torch.load(i3d_path)['state_dict'].keys())
+    #print('residuals are:', set(i3d.named_parameters()) - set(torch.load(i3d_path).keys()))
+    #i3d.load_state_dict(torch.load(i3d_path, map_location=device), strict=False)
     i3d.eval()
     return i3d
 
