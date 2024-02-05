@@ -1,6 +1,8 @@
 # object_LVDM
 final project for genAI course in SNU (2023 Fall)
+
 team leader, main coder : stellasybae@snu.ac.kr
+
 frame consistent video sampling from skylapse dataset
 
 
